@@ -102,10 +102,10 @@ document.querySelectorAll('a[data-msg]').forEach(function(a){{
     }}else{{
       navigator.clipboard&&navigator.clipboard.writeText(t);
       toast.innerHTML=(en
-        ?'Copied <b>'+t+'</b>!<br>Paste &amp; send it in our LINE chat.'
-        :'已複製 <b>'+t+'</b>！<br>請開啟 LINE 電腦版，貼到「小泰空」聊天室送出')
-        +'<br><a href="https://line.me/R/ti/p/{quote(OA_ID)}" target="_blank" rel="noopener">'
-        +(en?'Open LINE':'開啟 LINE')+'</a>';
+        ?'Copied <b>'+t+'</b>!<br>Paste &amp; send it in our <b>\\u5c0f\\u6cf0\\u7a7a</b> LINE chat.<br>(If the button does nothing, open LINE manually.)'
+        :'已複製 <b>'+t+'</b>！<br>請貼到「小泰空」LINE 聊天室送出<br>（若按鈕沒反應，請手動開啟 LINE 電腦版）')
+        +'<br><a href="line://ti/p/{quote(OA_ID)}">'
+        +(en?'Open LINE App':'開啟 LINE App')+'</a>';
     }}
     toast.classList.add('on');
     clearTimeout(timer);timer=setTimeout(function(){{toast.classList.remove('on')}},10000);
