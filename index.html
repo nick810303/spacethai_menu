@@ -41,23 +41,30 @@ function show(n){
 }
 show(/^#p[1-5]$/.test(location.hash)?+location.hash.slice(2):1);
 
-// 手機/iPad：oaMessage 連結由 LINE App 接手；電腦：改為複製文字+提示
-var mobile=/Android|iPhone|iPad/.test(navigator.userAgent)
+// 裝置分流：平板/手機（觸控）→ 提示後前往 LINE（訊息已預填，須按送出）
+//          電腦 → 複製文字 + 提示貼到聊天室
+var touch=/Android|iPhone|iPad/.test(navigator.userAgent)
   ||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent));
 var toast=document.getElementById('toast'),timer;
 document.querySelectorAll('a[data-msg]').forEach(function(a){
   a.addEventListener('click',function(e){
-    if(mobile)return;                 // 行動裝置直接走原連結
     e.preventDefault();
     var t=a.dataset.msg,en=/^[\x00-\x7F]*$/.test(t);
-    navigator.clipboard&&navigator.clipboard.writeText(t);
-    toast.innerHTML=(en
-      ?'Copied <b>'+t+'</b>!<br>Paste &amp; send it in our LINE chat.'
-      :'已複製 <b>'+t+'</b>！<br>請貼到「小泰空」LINE 聊天室送出')
-      +'<br><a href="https://line.me/R/ti/p/%40270vnkfr" target="_blank" rel="noopener">'
-      +(en?'Open LINE':'開啟 LINE')+'</a>';
+    if(touch){
+      toast.innerHTML=(en
+        ?'We\u2019ll open LINE with the message pre-filled.<br>Just tap <b>Send</b> in the chat!'
+        :'即將開啟 LINE，訊息已幫您填好<br>進入聊天室後請記得按<b>送出</b>！')
+        +'<br><a href="'+a.href+'">'+(en?'Go to LINE':'前往 LINE')+'</a>';
+    }else{
+      navigator.clipboard&&navigator.clipboard.writeText(t);
+      toast.innerHTML=(en
+        ?'Copied <b>'+t+'</b>!<br>Paste &amp; send it in our LINE chat.'
+        :'已複製 <b>'+t+'</b>！<br>請開啟 LINE 電腦版，貼到「小泰空」聊天室送出')
+        +'<br><a href="https://line.me/R/ti/p/%40270vnkfr" target="_blank" rel="noopener">'
+        +(en?'Open LINE':'開啟 LINE')+'</a>';
+    }
     toast.classList.add('on');
-    clearTimeout(timer);timer=setTimeout(function(){toast.classList.remove('on')},8000);
+    clearTimeout(timer);timer=setTimeout(function(){toast.classList.remove('on')},10000);
   });
 });
 </script>
