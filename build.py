@@ -76,6 +76,15 @@ doc = f"""<!doctype html>
     font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}}
   .cs{{background:#06c755;color:#fff;border-radius:10px;padding:8px 16px;font-weight:700;flex:none}}
   .ch{{font-size:12px;color:#d8b894;margin-top:4px}}
+  /* 示意圖動畫：游標閃爍 → 貼上 → 傳送鈕按壓 */
+  @keyframes hint{{0%,22%{{opacity:1}}32%,100%{{opacity:0}}}}
+  @keyframes paste{{0%,26%{{max-width:0}}42%,100%{{max-width:150px}}}}
+  @keyframes press{{0%,52%,80%,100%{{transform:scale(1)}}62%,70%{{transform:scale(.88);background:#04a544}}}}
+  @keyframes blink{{0%,49%{{opacity:1}}50%,100%{{opacity:0}}}}
+  .mh{{position:absolute;left:26px;color:#9aa0a6;animation:hint 4s infinite}}
+  .mi{{display:inline-block;overflow:hidden;white-space:nowrap;vertical-align:bottom;animation:paste 4s infinite}}
+  .mk{{display:inline-block;width:2px;height:1.05em;background:#333;vertical-align:-2px;animation:blink 1s step-end infinite}}
+  .cs.an{{animation:press 4s infinite}}
   /* 步驟式排版 */
   .tt{{font-weight:700;font-size:16px;margin-bottom:4px}}
   .tt .ok{{color:#7ee2a0;margin-right:4px}}
@@ -106,10 +115,14 @@ show(/^#p[1-5]$/.test(location.hash)?+location.hash.slice(2):1);
 var touch=/Android|iPhone|iPad/.test(navigator.userAgent)
   ||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent));
 var toast=document.getElementById('toast'),timer,cdt;
-function mock(t,en){{  // 模擬 LINE 對話框輸入列
-  return '<div class="cb"><span class="ci">'+t+'</span><span class="cs">'
-    +(en?'Send':'傳送')+'</span></div><div class="ch">'
-    +(en?'Press <b>Enter</b> or tap <b>Send</b>':'需手動按 <b>Enter</b> 或「<b>傳送</b>」鈕')+'</div>';
+var pasteKey=/Mac/.test(navigator.userAgent)?'\\u2318V':'Ctrl+V';
+function mockAnim(t,en){{  // 動畫版：游標閃爍 → 貼上 → 傳送鈕按壓
+  return '<div class="cb"><span class="ci" style="position:relative"><span class="mh">'
+    +pasteKey+' '+(en?'to paste':'貼上')+'</span><span class="mi">'+t
+    +'</span><span class="mk"></span></span><span class="cs an">'+(en?'Send':'傳送')+'</span></div>';
+}}
+function mockStatic(t,en){{  // 靜態版：文字已預填
+  return '<div class="cb"><span class="ci">'+t+'</span><span class="cs an">'+(en?'Send':'傳送')+'</span></div>';
 }}
 function step(n,inner){{return '<div class="step"><span class="sn">'+n+'</span><div class="sc">'+inner+'</div></div>';}}
 document.querySelectorAll('a[data-msg]').forEach(function(a){{
@@ -119,11 +132,15 @@ document.querySelectorAll('a[data-msg]').forEach(function(a){{
     var t=a.dataset.msg,en=/^[\\x00-\\x7F]*$/.test(t);
     if(touch){{
       toast.innerHTML='<div class="tt"><span class="ok">\\u2713</span>'
-        +(en?'Message ready!':'訊息已幫您填好！')+'</div>'
+        +(en?'Pre-filled \\u201c'+t+'\\u201d':'已預填「'+t+'」文字')+'</div>'
         +step(1,(en
-          ?'Opening our official LINE account in <b id="cdn">5</b>s\\u2026<br><a href="'+a.href+'">Go now</a>'
-          :'<b id="cdn">5</b> 秒後自動前往「小泰空」LINE 官方帳號<br><a href="'+a.href+'">立即前往</a>'))
-        +step(2,(en?'Send the pre-filled message':'傳送預填好的訊息')+mock(t,en));
+          ?'Opening \\u201cBaan Nuad Thai\\u201d official LINE account in <b id="cdn">5</b>s\\u2026<br><a href="'+a.href+'">Go now</a>'
+          :'<b id="cdn">5</b> 秒後自動前往<br>「小泰空LINE 官方帳號」<br><a href="'+a.href+'">立即前往</a>'))
+        +step(2,(en
+          ?'Press \\u201c<b>Enter</b>\\u201d or tap \\u201c<b>Send</b>\\u201d'
+          :'按「<b>Enter</b>」或「<b>傳送</b>」')
+          +mockStatic(t,en)
+          +'<div class="ch">'+(en?'(Message pre-filled)':'（文字已預先填入）')+'</div>');
       var n=5;
       cdt=setInterval(function(){{
         n--;var el=document.getElementById('cdn');
@@ -133,13 +150,17 @@ document.querySelectorAll('a[data-msg]').forEach(function(a){{
     }}else{{
       navigator.clipboard&&navigator.clipboard.writeText(t);
       toast.innerHTML='<div class="tt"><span class="ok">\\u2713</span>'
-        +(en?'Copied <b>'+t+'</b>':'已複製 <b>'+t+'</b>')+'</div>'
+        +(en?'Copied \\u201c'+t+'\\u201d':'已複製「'+t+'」文字')+'</div>'
         +step(1,(en
           ?'Open LINE on this computer<br><a href="line://ti/p/{quote(OA_ID)}">Open LINE App</a><div class="ch">(If nothing happens, open LINE manually)</div>'
           :'開啟 LINE 電腦版<br><a href="line://ti/p/{quote(OA_ID)}">開啟 LINE App</a><div class="ch">（若按鈕沒反應，請手動開啟 LINE）</div>'))
         +step(2,(en
-          ?'<b>Paste</b> in our official LINE account'
-          :'到「小泰空」LINE 官方帳號<b>貼上</b>')+mock(t,en));
+          ?'Go to \\u201cBaan Nuad Thai\\u201d official LINE account<br>Press \\u201c<b>'+pasteKey+'</b>\\u201d to paste'
+          :'進入「小泰空LINE 官方帳號」<br>在對話框按「<b>'+pasteKey+'</b>」貼上文字')
+          +mockAnim(t,en))
+        +step(3,(en
+          ?'Press \\u201c<b>Enter</b>\\u201d or tap \\u201c<b>Send</b>\\u201d'
+          :'按「<b>Enter</b>」或「<b>傳送</b>」'));
       timer=setTimeout(function(){{toast.classList.remove('on')}},20000);
     }}
     toast.classList.add('on');
