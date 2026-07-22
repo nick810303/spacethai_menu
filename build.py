@@ -67,8 +67,17 @@ doc = f"""<!doctype html>
     display:none;z-index:9;max-width:86%;text-align:center}}
   #toast.on{{display:block}}
   #toast b{{color:#ffb26b}}
-  #toast a{{display:inline-block;margin-top:8px;background:#e07b39;color:#fff;text-decoration:none;
+  #toast a{{display:inline-block;margin-top:10px;background:#e07b39;color:#fff;text-decoration:none;
     padding:6px 18px;border-radius:10px;font-weight:700}}
+  /* 模擬 LINE 對話框輸入列 */
+  .cb{{display:flex;gap:8px;align-items:center;background:#fff;border-radius:12px;
+    padding:8px 10px;margin:12px auto 2px;max-width:340px}}
+  .ci{{flex:1;background:#f0f1f3;border-radius:18px;padding:8px 14px;color:#333;text-align:left;
+    font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}}
+  .cs{{background:#06c755;color:#fff;border-radius:10px;padding:8px 16px;font-weight:700;flex:none}}
+  .ch{{font-size:13px;color:#e8c9a8;margin-top:2px}}
+  .cd{{margin-top:8px;font-size:14px}}
+  .cd b{{color:#ffd76b;font-size:17px}}
 </style>
 </head>
 <body>
@@ -89,26 +98,41 @@ show(/^#p[1-5]$/.test(location.hash)?+location.hash.slice(2):1);
 //          電腦 → 複製文字 + 提示貼到聊天室
 var touch=/Android|iPhone|iPad/.test(navigator.userAgent)
   ||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent));
-var toast=document.getElementById('toast'),timer;
+var toast=document.getElementById('toast'),timer,cdt;
+function mock(t,en){{  // 模擬 LINE 聊天室輸入列
+  return '<div class="cb"><span class="ci">'+t+'</span><span class="cs">'
+    +(en?'Send':'傳送')+'</span></div><div class="ch">'
+    +(en?'\\u2191 It will look like this \\u2014 tap the green button':'\\u2191 對話框會像這樣，按綠色「傳送」即可')+'</div>';
+}}
 document.querySelectorAll('a[data-msg]').forEach(function(a){{
   a.addEventListener('click',function(e){{
     e.preventDefault();
+    clearTimeout(timer);clearInterval(cdt);
     var t=a.dataset.msg,en=/^[\\x00-\\x7F]*$/.test(t);
     if(touch){{
       toast.innerHTML=(en
-        ?'We\\u2019ll open LINE with the message pre-filled.<br>Just tap <b>Send</b> in the chat!'
-        :'即將開啟 LINE，訊息已幫您填好<br>進入聊天室後請記得按<b>送出</b>！')
-        +'<br><a href="'+a.href+'">'+(en?'Go to LINE':'前往 LINE')+'</a>';
+        ?'Message pre-filled! In the chat, just tap <b>Send</b>.'
+        :'訊息已幫您填好！進入聊天室後<br>請在下方對話框按「<b>傳送</b>」')
+        +mock(t,en)
+        +'<div class="cd"><b id="cdn">5</b>'+(en?'s \\u2014 opening LINE\\u2026':' 秒後自動開啟 LINE\\u2026')+'</div>'
+        +'<a href="'+a.href+'">'+(en?'Go now':'立即前往')+'</a>';
+      var n=5;
+      cdt=setInterval(function(){{
+        n--;var el=document.getElementById('cdn');
+        if(el)el.textContent=n;
+        if(n<=0){{clearInterval(cdt);location.href=a.href;}}
+      }},1000);
     }}else{{
       navigator.clipboard&&navigator.clipboard.writeText(t);
       toast.innerHTML=(en
-        ?'Copied <b>'+t+'</b>!<br>Paste &amp; send it in our <b>\\u5c0f\\u6cf0\\u7a7a</b> LINE chat.<br>(If the button does nothing, open LINE manually.)'
-        :'已複製 <b>'+t+'</b>！<br>請貼到「小泰空」LINE 聊天室送出<br>（若按鈕沒反應，請手動開啟 LINE 電腦版）')
-        +'<br><a href="line://ti/p/{quote(OA_ID)}">'
-        +(en?'Open LINE App':'開啟 LINE App')+'</a>';
+        ?'Copied <b>'+t+'</b>!<br>Open LINE on this computer \\u2192 our chat \\u2192 <b>paste</b> it in the message box \\u2192 hit <b>Send</b>.'
+        :'已複製 <b>'+t+'</b>！<br>開啟 LINE 電腦版 → 進入「小泰空」聊天室<br>在下方對話框<b>貼上</b>，再按「<b>傳送</b>」')
+        +mock(t,en)
+        +'<a href="line://ti/p/{quote(OA_ID)}">'+(en?'Open LINE App':'開啟 LINE App')+'</a>'
+        +'<div class="ch">'+(en?'(If nothing happens, open LINE manually)':'（若按鈕沒反應，請手動開啟 LINE）')+'</div>';
+      timer=setTimeout(function(){{toast.classList.remove('on')}},15000);
     }}
     toast.classList.add('on');
-    clearTimeout(timer);timer=setTimeout(function(){{toast.classList.remove('on')}},10000);
   }});
 }});
 </script>
