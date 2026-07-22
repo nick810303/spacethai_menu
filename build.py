@@ -39,7 +39,7 @@ for i, p in enumerate(d["pages"]):
             url = f'https://line.me/R/oaMessage/{quote(OA_ID)}/?{quote(act["text"])}'
             label = html.escape(act["text"])
             spots.append(f'<a class="spot" style="{style}" href="{url}" '
-                         f'target="_blank" rel="noopener" title="{label}"></a>')
+                         f'data-msg="{label}" title="{label}"></a>')
     pages_html.append(
         f'<div class="page" id="p{n}">'
         f'<img src="page{n}.jpg" alt="{html.escape(p["name"])}">'
@@ -62,12 +62,20 @@ doc = f"""<!doctype html>
   .page img{{width:100%;height:auto}}
   .spot{{position:absolute;display:block;border-radius:12px;cursor:pointer}}
   .spot:hover{{background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}}
+  #toast{{position:fixed;left:50%;bottom:8%;transform:translateX(-50%);background:#4a2e24;color:#f5e9d9;
+    padding:16px 22px;border-radius:16px;font:15px/1.6 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.35);
+    display:none;z-index:9;max-width:86%;text-align:center}}
+  #toast.on{{display:block}}
+  #toast b{{color:#ffb26b}}
+  #toast a{{display:inline-block;margin-top:8px;background:#e07b39;color:#fff;text-decoration:none;
+    padding:6px 18px;border-radius:10px;font-weight:700}}
 </style>
 </head>
 <body>
 <div class="wrap">
 {chr(10).join(pages_html)}
 </div>
+<div id="toast"></div>
 <script>
 function show(n){{
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
@@ -76,6 +84,26 @@ function show(n){{
   window.scrollTo(0,0);
 }}
 show(/^#p[1-5]$/.test(location.hash)?+location.hash.slice(2):1);
+
+// 手機/iPad：oaMessage 連結由 LINE App 接手；電腦：改為複製文字+提示
+var mobile=/Android|iPhone|iPad/.test(navigator.userAgent)
+  ||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent));
+var toast=document.getElementById('toast'),timer;
+document.querySelectorAll('a[data-msg]').forEach(function(a){{
+  a.addEventListener('click',function(e){{
+    if(mobile)return;                 // 行動裝置直接走原連結
+    e.preventDefault();
+    var t=a.dataset.msg,en=/^[\\x00-\\x7F]*$/.test(t);
+    navigator.clipboard&&navigator.clipboard.writeText(t);
+    toast.innerHTML=(en
+      ?'Copied <b>'+t+'</b>!<br>Paste &amp; send it in our LINE chat.'
+      :'已複製 <b>'+t+'</b>！<br>請貼到「小泰空」LINE 聊天室送出')
+      +'<br><a href="https://line.me/R/ti/p/{quote(OA_ID)}" target="_blank" rel="noopener">'
+      +(en?'Open LINE':'開啟 LINE')+'</a>';
+    toast.classList.add('on');
+    clearTimeout(timer);timer=setTimeout(function(){{toast.classList.remove('on')}},8000);
+  }});
+}});
 </script>
 </body>
 </html>
