@@ -37,6 +37,15 @@
   .mi{display:inline-block;overflow:hidden;white-space:nowrap;vertical-align:bottom;animation:paste 4s infinite}
   .mk{display:inline-block;width:2px;height:1.05em;background:#333;vertical-align:-2px;animation:blink 1s step-end infinite}
   .cs.an{animation:press 4s infinite}
+  /* 手機版：卡片放寬、字級微縮 */
+  @media (max-width:480px){
+    #toast{left:4%;right:4%;transform:none;max-width:none;padding:14px 16px;font-size:14px}
+    .tt{font-size:15px}
+    .step{margin-top:10px}
+    .cb{padding:7px 9px}
+    .ci{font-size:13px;padding:7px 12px}
+    .cs{font-size:14px;padding:7px 14px}
+  }
   /* 步驟式排版 */
   .tt{font-weight:700;font-size:16px;margin-bottom:4px}
   .tt .ok{color:#7ee2a0;margin-right:4px}
