@@ -23,12 +23,19 @@
     padding:6px 18px;border-radius:10px;font-weight:700}
   /* 模擬 LINE 對話框輸入列 */
   .cb{display:flex;gap:8px;align-items:center;background:#fff;border-radius:12px;
-    padding:8px 10px;margin:12px auto 2px;max-width:340px}
+    padding:8px 10px;margin:8px 0 0;max-width:320px}
   .ci{flex:1;background:#f0f1f3;border-radius:18px;padding:8px 14px;color:#333;text-align:left;
     font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
   .cs{background:#06c755;color:#fff;border-radius:10px;padding:8px 16px;font-weight:700;flex:none}
-  .ch{font-size:13px;color:#e8c9a8;margin-top:2px}
-  .cd{margin-top:8px;font-size:14px}
+  .ch{font-size:12px;color:#d8b894;margin-top:4px}
+  /* 步驟式排版 */
+  .tt{font-weight:700;font-size:16px;margin-bottom:4px}
+  .tt .ok{color:#7ee2a0;margin-right:4px}
+  .step{display:flex;align-items:flex-start;gap:10px;text-align:left;margin-top:12px}
+  .sn{flex:none;width:22px;height:22px;border-radius:50%;background:#e07b39;color:#fff;font-weight:700;
+    font-size:13px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .sc{flex:1;min-width:0}
+  .sc a{margin-top:6px}
   .cd b{color:#ffd76b;font-size:17px}
 </style>
 </head>
@@ -50,28 +57,29 @@ function show(n){
 }
 show(/^#p[1-5]$/.test(location.hash)?+location.hash.slice(2):1);
 
-// 裝置分流：平板/手機（觸控）→ 提示後前往 LINE（訊息已預填，須按送出）
-//          電腦 → 複製文字 + 提示貼到聊天室
+// 裝置分流：平板/手機（觸控）→ 倒數後前往 LINE 官方帳號（訊息已預填，須按傳送）
+//          電腦 → 複製文字 + 兩步驟指引（開啟 App、貼上傳送）
 var touch=/Android|iPhone|iPad/.test(navigator.userAgent)
   ||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent));
 var toast=document.getElementById('toast'),timer,cdt;
-function mock(t,en){  // 模擬 LINE 聊天室輸入列
+function mock(t,en){  // 模擬 LINE 對話框輸入列
   return '<div class="cb"><span class="ci">'+t+'</span><span class="cs">'
     +(en?'Send':'傳送')+'</span></div><div class="ch">'
-    +(en?'\u2191 It will look like this \u2014 tap the green button':'\u2191 對話框會像這樣，按綠色「傳送」即可')+'</div>';
+    +(en?'Press <b>Enter</b> or tap <b>Send</b>':'需手動按 <b>Enter</b> 或「<b>傳送</b>」鈕')+'</div>';
 }
+function step(n,inner){return '<div class="step"><span class="sn">'+n+'</span><div class="sc">'+inner+'</div></div>';}
 document.querySelectorAll('a[data-msg]').forEach(function(a){
   a.addEventListener('click',function(e){
     e.preventDefault();
     clearTimeout(timer);clearInterval(cdt);
     var t=a.dataset.msg,en=/^[\x00-\x7F]*$/.test(t);
     if(touch){
-      toast.innerHTML=(en
-        ?'Message pre-filled! In the chat, just tap <b>Send</b>.'
-        :'訊息已幫您填好！進入聊天室後<br>請在下方對話框按「<b>傳送</b>」')
-        +mock(t,en)
-        +'<div class="cd"><b id="cdn">5</b>'+(en?'s \u2014 opening LINE\u2026':' 秒後自動開啟 LINE\u2026')+'</div>'
-        +'<a href="'+a.href+'">'+(en?'Go now':'立即前往')+'</a>';
+      toast.innerHTML='<div class="tt"><span class="ok">\u2713</span>'
+        +(en?'Message ready!':'訊息已幫您填好！')+'</div>'
+        +step(1,(en
+          ?'Opening our official LINE account in <b id="cdn">5</b>s\u2026<br><a href="'+a.href+'">Go now</a>'
+          :'<b id="cdn">5</b> 秒後自動前往「小泰空」LINE 官方帳號<br><a href="'+a.href+'">立即前往</a>'))
+        +step(2,(en?'Send the pre-filled message':'傳送預填好的訊息')+mock(t,en));
       var n=5;
       cdt=setInterval(function(){
         n--;var el=document.getElementById('cdn');
@@ -80,13 +88,15 @@ document.querySelectorAll('a[data-msg]').forEach(function(a){
       },1000);
     }else{
       navigator.clipboard&&navigator.clipboard.writeText(t);
-      toast.innerHTML=(en
-        ?'Copied <b>'+t+'</b>!<br>Open LINE on this computer \u2192 our chat \u2192 <b>paste</b> it in the message box \u2192 hit <b>Send</b>.'
-        :'已複製 <b>'+t+'</b>！<br>開啟 LINE 電腦版 → 進入「小泰空」聊天室<br>在下方對話框<b>貼上</b>，再按「<b>傳送</b>」')
-        +mock(t,en)
-        +'<a href="line://ti/p/%40270vnkfr">'+(en?'Open LINE App':'開啟 LINE App')+'</a>'
-        +'<div class="ch">'+(en?'(If nothing happens, open LINE manually)':'（若按鈕沒反應，請手動開啟 LINE）')+'</div>';
-      timer=setTimeout(function(){toast.classList.remove('on')},15000);
+      toast.innerHTML='<div class="tt"><span class="ok">\u2713</span>'
+        +(en?'Copied <b>'+t+'</b>':'已複製 <b>'+t+'</b>')+'</div>'
+        +step(1,(en
+          ?'Open LINE on this computer<br><a href="line://ti/p/%40270vnkfr">Open LINE App</a><div class="ch">(If nothing happens, open LINE manually)</div>'
+          :'開啟 LINE 電腦版<br><a href="line://ti/p/%40270vnkfr">開啟 LINE App</a><div class="ch">（若按鈕沒反應，請手動開啟 LINE）</div>'))
+        +step(2,(en
+          ?'<b>Paste</b> in our official LINE account'
+          :'到「小泰空」LINE 官方帳號<b>貼上</b>')+mock(t,en));
+      timer=setTimeout(function(){toast.classList.remove('on')},20000);
     }
     toast.classList.add('on');
   });
